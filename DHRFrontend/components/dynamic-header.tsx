@@ -67,7 +67,11 @@ const featureConfig = {
   },
 }
 
-export function DynamicHeader() {
+interface DynamicHeaderProps {
+  children?: React.ReactNode
+}
+
+export function DynamicHeader({ children }: DynamicHeaderProps) {
   const pathname = usePathname()
   const config = featureConfig[pathname as keyof typeof featureConfig] || featureConfig["/"]
   const IconComponent = config.icon
@@ -89,19 +93,7 @@ export function DynamicHeader() {
 
         {/* Right Side - Controls */}
         <div className="flex items-center gap-4">
-          {/* Language Selector */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-                English
-                <ChevronDown className="ml-1 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-white">
-              <DropdownMenuItem>English</DropdownMenuItem>
-              <DropdownMenuItem>हिंदी (Hindi)</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {children}
 
           {/* Citizen Info - Now clickable */}
           <div

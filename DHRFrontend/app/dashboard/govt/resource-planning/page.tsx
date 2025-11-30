@@ -38,111 +38,7 @@ export default function ResourcePlanningPage() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Left Sidebar Navigation */}
-      <div className="w-64 bg-white border-r border-gray-200 p-4 flex flex-col">
-        {/* Logo Section */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-            KHM
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-gray-900">Kerala Health</h1>
-            <h2 className="text-lg font-semibold text-gray-900">Monitor</h2>
-            <p className="text-sm text-gray-600">Migrant Health Dashboard</p>
-          </div>
-        </div>
-
-        {/* Search */}
-        <div className="mb-6">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search dashboard..."
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-            <div className="absolute right-2 top-2 text-xs text-gray-400">⌘ K</div>
-          </div>
-        </div>
-
-        {/* Navigation Items */}
-        <div className="space-y-2 flex-1">
-          <div
-            className="text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-lg flex items-center gap-2 cursor-pointer"
-            onClick={() => router.push("/dashboard/govt")}
-          >
-            <Users className="h-4 w-4" />
-            <span className="text-sm">Population Overview</span>
-            <Badge className="bg-green-600 text-white ml-auto">Active</Badge>
-          </div>
-
-          <div
-            className="text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-lg flex items-center gap-2 cursor-pointer"
-            onClick={() => router.push("/dashboard/govt/disease-surveillance")}
-          >
-            <Activity className="h-4 w-4" />
-            <span className="text-sm">Disease Surveillance</span>
-            <Badge className="bg-red-500 text-white ml-auto text-xs">12</Badge>
-            <span className="text-xs text-red-600 ml-1">Alerts</span>
-          </div>
-
-          <div
-            className="text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-lg flex items-center gap-2 cursor-pointer"
-            onClick={() => router.push("/dashboard/govt/high-risk-camps")}
-          >
-            <AlertTriangle className="h-4 w-4" />
-            <span className="text-sm">High-Risk Camps</span>
-            <Badge className="bg-yellow-500 text-white ml-auto text-xs">8</Badge>
-            <span className="text-xs text-yellow-600 ml-1">Flagged</span>
-          </div>
-
-          <div
-            className="text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-lg flex items-center gap-2 cursor-pointer"
-            onClick={() => router.push("/dashboard/govt/health-records")}
-          >
-            <User className="h-4 w-4" />
-            <span className="text-sm">Health Records</span>
-          </div>
-
-          <div className="bg-blue-100 text-blue-800 px-3 py-2 rounded-lg flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            <span className="font-medium text-sm">Resource Planning</span>
-          </div>
-
-          <div className="text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-lg flex items-center gap-2 cursor-pointer">
-            <Users className="h-4 w-4" />
-            <span className="text-sm">Incentives & Policy</span>
-          </div>
-
-          <div className="text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-lg flex items-center gap-2 cursor-pointer relative">
-            <AlertTriangle className="h-4 w-4" />
-            <span className="text-sm">Emergency Response</span>
-            <Badge className="bg-red-600 text-white ml-auto text-xs">LIVE</Badge>
-          </div>
-
-          <div className="text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-lg flex items-center gap-2 cursor-pointer">
-            <TrendingUp className="h-4 w-4" />
-            <span className="text-sm">Advanced Analytics</span>
-          </div>
-        </div>
-
-        {/* Bottom Profile */}
-        <div className="mt-8 pt-4 border-t border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-              <User className="h-4 w-4 text-gray-600" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">Dr. Rajesh Kumar</p>
-              <p className="text-xs text-gray-600">Health Officer</p>
-            </div>
-            <Settings className="h-4 w-4 text-gray-400 ml-auto cursor-pointer" />
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col">
         {/* Header */}
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-6 bg-white">
           <div className="flex items-center gap-3">
@@ -553,7 +449,6 @@ export default function ResourcePlanningPage() {
             </div>
           </div>
         </div>
-      </div>
     </div>
   )
 }
