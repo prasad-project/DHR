@@ -47,7 +47,7 @@ function GovtDashboardLayoutContent({ children }: { children: React.ReactNode })
     },
     {
       id: "disease-surveillance",
-      label: t('diseaseSurveillance'),
+      label: "District View",
       icon: Activity,
       path: "/dashboard/govt/disease-surveillance",
       badge: { text: "12", color: "bg-red-500 text-white text-xs" },
