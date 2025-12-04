@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { 
   Shield, 
   CheckCircle, 
@@ -33,20 +34,8 @@ const cardVariants = {
   },
 }
 
-// Kerala Districts for Random Selection
-const keralaLocations = [
-  "Thiruvananthapuram, Kerala",
-  "Kochi, Ernakulam",
-  "Kozhikode, Kerala",
-  "Thrissur, Kerala",
-  "Kannur, Kerala",
-  "Kollam, Kerala",
-  "Alappuzha, Kerala",
-  "Palakkad, Kerala"
-];
-
 export default function HealthSetuID() {
-  const [healthId, setHealthId] = useState<string>("HS-KL-87654321")
+  const [healthId, setHealthId] = useState<string>("")
   const [cardData, setCardData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -56,49 +45,26 @@ export default function HealthSetuID() {
     if (storedData) {
       try {
         const parsed = JSON.parse(storedData)
-        setCardData(parsed)
+        if (parsed) {
+          setCardData(parsed)
+        }
       } catch (e) {
         console.error("Data parse error", e)
       }
     }
   }, [])
 
-  // Handle Generate Card button
   const handleGenerateCard = async () => {
-    setIsLoading(true)
-    
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 2000))
-
+    setIsLoading(true);
     try {
-      // Mock Data Generation
-      // In a real app, this comes from apiService.getHealthIdCard(healthId)
-      
-      const randomLocation = keralaLocations[Math.floor(Math.random() * keralaLocations.length)];
-      
-      // Using a Real QR Code API (goqr.me or qrserver) to generate a scannable code
-      const realQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=HealthSetu_ID:${healthId}_VERIFIED`;
-
-      const generatedData = {
-        name: "Aditi Nair",
-        age: 24,
-        gender: "Female",
-        location: randomLocation, 
-        healthId: healthId,
-        validUntil: "2030-12-31",
-        // Using a clear, professional placeholder image
-        photoUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop", 
-        qrCodeUrl: realQrUrl
-      }
-      
-      updateCardState(generatedData)
-
+      const generatedData = await apiService.getHealthIdCard(healthId);
+      updateCardState(generatedData.healthCard);
     } catch (err) {
-      console.error("Error generating card", err)
+      console.error("Error generating card", err);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const updateCardState = (data: any) => {
     localStorage.setItem("healthCard_v2", JSON.stringify(data))
@@ -141,18 +107,28 @@ export default function HealthSetuID() {
                 className="flex flex-col items-center justify-center w-full"
               >
                 <div className="p-8 border-2 border-dashed border-slate-200 rounded-2xl bg-white w-full max-w-md text-center shadow-sm">
-                    <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Shield className="w-8 h-8" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-slate-800 mb-2">Initialize HealthSetu ID</h3>
-                    <p className="text-sm text-slate-500 mb-6">Fetch records from the Kerala State Database.</p>
-                    <Button 
-                        onClick={handleGenerateCard} 
-                        size="lg"
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-xl transition-all rounded-full px-8 w-full md:w-auto"
+                  <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Shield className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-800 mb-2">Initialize HealthSetu ID</h3>
+                  <p className="text-sm text-slate-500 mb-6">Enter the Health ID to fetch records from the Kerala State Database.</p>
+                  <div className="flex flex-col gap-4">
+                    <Input
+                      type="text"
+                      placeholder="Enter Health ID"
+                      value={healthId}
+                      onChange={(e) => setHealthId(e.target.value)}
+                      className="text-center"
+                    />
+                    <Button
+                      onClick={handleGenerateCard}
+                      size="lg"
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-xl transition-all rounded-full px-8 w-full md:w-auto"
+                      disabled={!healthId}
                     >
-                        Generate Digital ID
+                      Generate Digital ID
                     </Button>
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -302,6 +278,13 @@ export default function HealthSetuID() {
                       onClick={() => window.print()}
                     >
                         <Download className="w-4 h-4" /> Download Digital Card
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="gap-2 border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-900" 
+                      onClick={() => setCardData(null)}
+                    >
+                        <RefreshCw className="w-4 h-4" /> Generate New
                     </Button>
                 </motion.div>
 
