@@ -48,7 +48,7 @@
     "cmdk": "latest",
     "date-fns": "4.1.0",
     "embla-carousel-react": "latest",
-    "framer-motion": "^12.23.25",
+    "framer-motion": "^7.10.3",
     "geist": "latest",
     "input-otp": "latest",
     "leaflet": "^1.9.4",
