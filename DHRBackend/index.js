@@ -11,6 +11,7 @@ import vitalsRoutes from "./routes/vitalsRoutes.js";
 import medicalRecordRoutes from "./routes/medicalRecordRoutes.js";
 import appointmentRoutes from "./routes/appointmentRoutes.js";
 import translateRoutes from "./routes/translateRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
 import { corsOptions } from "./config/corsConfig.js";
 const app = express();
 // Manual universal preflight handler
@@ -35,7 +36,7 @@ app.use((req, res, next) => {
 // Actual CORS middleware
 app.use(cors(corsOptions));
 
-app.use(cors(corsOptions));
+
 
 
 app.use(express.json({ limit: '10mb' })); // <--- Make sure you parse JSON body with increased limit for audio
@@ -56,6 +57,8 @@ app.use("/api/prescription", prescriptionRoutes);
 app.use("/api/vitals", vitalsRoutes);
 app.use("/api/medical-record", medicalRecordRoutes);
 app.use("/api/appointment", appointmentRoutes);
+
+app.use("/api/auth",authRoutes)
 
 // Error handling middleware
 app.use((err, req, res, next) => {

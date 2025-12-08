@@ -38,13 +38,13 @@ export const getPatientById = async (req, res) => {
 
 /**
  * Get patient by Health ID
- * POST /api/patient/health-id
+ *  /api/patient/health-id
  */
 export const getPatientByHealthId = async (req, res) => {
     try {
-        const { health_id } = req.body;
+        const { healthId} = req.params;
 
-        const patient = await PatientModel.getByHealthId(supabase, health_id);
+        const patient = await PatientModel.getByHealthId(supabase, healthId);
 
         if (!patient) {
             return res.status(404).json({
@@ -245,3 +245,24 @@ export const getPatientStats = async (req, res) => {
         });
     }
 };
+
+
+export const getHealthCard = async (req,res)=>{
+   try {
+     const {healthId}=req.body;
+
+    const healthCard=await supabase
+    .from('patients')
+    .select('*')
+    .eq('health_id',healthId)
+    .single();
+
+    return res.json({
+        success:true,
+        healthCard
+    })
+   } catch (error) {
+    console.error("database error",error);
+    res.json({error})
+   }
+}

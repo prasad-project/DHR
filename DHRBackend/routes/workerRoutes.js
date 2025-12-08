@@ -12,19 +12,19 @@ const router = express.Router();
 
 
 router.post("/", async (req, res) => {
-  const { health_id } = req.body;
+  const { healthId } = req.body;
 
   // Validate request body
-  if (!health_id) {
+  if (!healthId) {
     return res.status(400).json({ error: "health_id is required" });
   }
 
   try {
     // Fetch worker from Supabase using health_id
     const { data: worker, error } = await supabase
-      .from("workers")
+      .from("patients")
       .select("*")
-      .eq("health_id",health_id)
+      .eq("health_id",healthId)
       .maybeSingle();
 
     console.log("Worker query result:", worker);
@@ -35,7 +35,7 @@ router.post("/", async (req, res) => {
     }
 
     // Generate QR code (link to health ID)
-    const qrCode = await QRCode.toDataURL(`health-id:${worker.health_id}`);
+    const qrCode = await QRCode.toDataURL(`health-id:${worker.healthId}`);
 
     res.json({ worker, qrCode });
   } catch (err) {

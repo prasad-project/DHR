@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import api from "@/lib/api"
 import { 
   Shield, 
   CheckCircle, 
@@ -30,7 +31,7 @@ const cardVariants = {
     opacity: 1, 
     scale: 1, 
     filter: "blur(0px)",
-    transition: { type: "spring", stiffness: 100, damping: 20 } 
+    transition: { type: "spring" as const, stiffness: 100, damping: 20 } 
   },
 }
 
@@ -57,8 +58,8 @@ export default function HealthSetuID() {
   const handleGenerateCard = async () => {
     setIsLoading(true);
     try {
-      const generatedData = await apiService.getHealthIdCard(healthId);
-      updateCardState(generatedData.healthCard);
+      const generatedData = await api.patient.getHealthCard(healthId);
+      updateCardState(generatedData.healthCard.data);
     } catch (err) {
       console.error("Error generating card", err);
     } finally {
@@ -205,7 +206,7 @@ export default function HealthSetuID() {
                         <div className="flex flex-col items-center md:items-start space-y-3">
                             <div className="relative group">
                                 <div className="w-28 h-28 rounded-xl overflow-hidden border-4 border-white shadow-lg bg-slate-200">
-                                    <img src={cardData.photoUrl} alt="User" className="w-full h-full object-cover" />
+                                    <img src={cardData.avatar_url} alt="User" className="w-full h-full object-cover" />
                                 </div>
                                 <div className="absolute -bottom-2 -right-2 bg-blue-600 text-white p-1.5 rounded-full border-2 border-white shadow-sm" title="Biometric Verified">
                                     <Fingerprint className="w-4 h-4" />
@@ -230,7 +231,7 @@ export default function HealthSetuID() {
                                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 flex items-center justify-between group hover:border-indigo-200 transition-colors">
                                     <div>
                                       <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">HealthSetu ID</p>
-                                      <p className="text-indigo-700 font-mono font-bold text-lg">{cardData.healthId}</p>
+                                      <p className="text-indigo-700 font-mono font-bold text-lg">{cardData.health_id}</p>
                                     </div>
                                     <Shield className="w-5 h-5 text-indigo-200 group-hover:text-indigo-400 transition-colors" />
                                 </div>
@@ -238,7 +239,7 @@ export default function HealthSetuID() {
                                 {/* Location Box */}
                                 <div className="flex items-center gap-2 text-slate-700">
                                    <MapPin className="w-4 h-4 text-orange-500" /> 
-                                   <span className="font-medium">{cardData.location}</span>
+                                   <span className="font-medium">{cardData.origin_city}, {cardData.origin_state}</span>
                                 </div>
                             </div>
                         </div>

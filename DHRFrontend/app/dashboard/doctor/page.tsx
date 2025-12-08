@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState ,useEffect} from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -11,7 +11,10 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Switch } from "@/components/ui/switch"
 import DoctorProfileSidebar from "@/components/doctor-profile-sidebar"
-import {apiService} from "@/api/api"
+import { useToast } from "@/components/ui/use-toast"
+
+
+import api from "@/lib/api"
 
 import {
   Search,
@@ -39,7 +42,9 @@ import {
   CheckCircle,
   Bell,
   Settings,
+  Loader2,
 } from "lucide-react"
+
 
 
 //Interface for when doctor will search patient record through id
@@ -65,12 +70,12 @@ interface Patient {
   visits: Visit[];
   
 }
-
+const DOCTOR_ID = "91d60e73-e29e-4c4d-a9a1-4b9810537e96" // Mocked logged-in doctor ID
 export default function DoctorDashboard() {
   // const [currentSection, setCurrentSection] = useState("patient-search")
   const [searchHealthId,setSearchHealthId]=useState<string>("");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
-  const [diseaseStatus, setDiseaseStatus] = useState("ongoing")
+
   const [patientSummary, setPatientSummary] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [visitHistory, setVisitHistory] = useState([
@@ -95,84 +100,257 @@ export default function DoctorDashboard() {
       badgeColor: "bg-blue-100 text-blue-800"
     }
   ])
-  const [prescriptions, setPrescriptions] = useState([
-    {
-      id: 1,
-      medicine: "Azithromycin 500mg",
-      dosage: "1 Tablet",
-      frequency: "Once Daily",
-      duration: "5 Days",
-      instructions: "After Food",
-    },
-    {
-      id: 2,
-      medicine: "Paracetamol 650mg",
-      dosage: "1 Tablet",
-      frequency: "Twice Daily",
-      duration: "3 Days",
-      instructions: "For Fever",
-    },
-    {
-      id: 3,
-      medicine: "Cough Syrup 10ml",
-      dosage: "2 tsp",
-      frequency: "Three Times",
-      duration: "7 Days",
-      instructions: "Before Sleep",
-    },
-  ])
+
+  const { toast } = useToast()
+    // State management (typed to avoid TS errors)
+    const [loading, setLoading] = useState<boolean>(false)
+    const [patient, setPatient] = useState<any | null>(null)
+    const [medicalRecord, setMedicalRecord] = useState<any | null>(null)
+    const [prescriptions, setPrescriptions] = useState<any[]>([])
+    const [vitals, setVitals] = useState<any | null>(null)
+
+    // Form states
+    const [healthId, setHealthId] = useState<string>("14-1234-5678-9012") // Default for testing
+    const [symptoms, setSymptoms] = useState<string>("")
+    const [diagnosis, setDiagnosis] = useState<string>("")
+    const [diseaseStatus, setDiseaseStatus] = useState<string>("ongoing")
+    const [clinicalNotes, setClinicalNotes] = useState<string>("")
+
+    // Vitals form
+    const [vitalsSystolic, setVitalsSystolic] = useState<string>("")
+    const [vitalsDiastolic, setVitalsDiastolic] = useState<string>("")
+    const [temperature, setTemperature] = useState<string>("")
+    const [heartRate, setHeartRate] = useState<string>("")
+    const [o2Saturation, setO2Saturation] = useState<string>("")
+
+
+
   const [uploadedFiles, setUploadedFiles] = useState([
     { name: "chest_xray_report.pdf", type: "pdf" },
     { name: "blood_test_results.jpg", type: "image" },
   ])
   const [isProfileSidebarOpen, setIsProfileSidebarOpen] = useState(false)
 
-  const fetchPatientData = async () => {
-    try{
-      const data = await apiService.getWorkerDetailsByDoctor(searchHealthId);
-      setSelectedPatient(data.patient);
-    }catch(error){
-      console.error("Error fetching patient data:", error);
+  const removeFile = (fileName: string) => {
+    setUploadedFiles(prev => prev.filter(f => f.name !== fileName));
+  };
+
+
+
+  // Sync UI with backend when data arrives
+  useEffect(() => {
+    if (!medicalRecord) {
+      setSymptoms("")
+      setDiagnosis("")
+      setClinicalNotes("")
+      return
     }
 
+    setSymptoms(medicalRecord.symptoms || "")
+    setDiagnosis(medicalRecord.diagnosis || "")
+    setClinicalNotes(medicalRecord.clinical_notes || "")
+  }, [medicalRecord])
+
+  useEffect(() => {
+    if (!vitals) {
+      setVitalsSystolic("")
+      setVitalsDiastolic("")
+      setTemperature("")
+      setHeartRate("")
+      setO2Saturation("")
+      return
+    }
+
+    setVitalsSystolic(vitals.blood_pressure_systolic?.toString() || "")
+    setVitalsDiastolic(vitals.blood_pressure_diastolic?.toString() || "")
+    setTemperature(vitals.temperature?.toString() || "")
+    setHeartRate(vitals.heart_rate?.toString() || "")
+    setO2Saturation(vitals.oxygen_saturation?.toString() || "")
+  }, [vitals])
+
+  const fetchPatientData = async () => {
+    if (!healthId) {
+            toast({ title: "Error", description: "Please enter a Health ID", variant: "destructive" })
+            return
+        }
+
+        setLoading(true)
+        try {
+            const response: any = await api.patient.getByHealthId(healthId)
+            setPatient(response?.patient ?? null)
+
+            // Load patient history
+            const historyResponse: any = await api.patient.getHistory(response?.patient?.id)
+
+            // Set latest medical record if exists
+            const medicalRecords = historyResponse?.history?.medical_records ?? []
+            if (medicalRecords.length > 0) {
+                const latestRecord = medicalRecords[0]
+                setMedicalRecord(latestRecord)
+                setSymptoms(latestRecord.symptoms || "")
+                setDiagnosis(latestRecord.diagnosis || "")
+                setDiseaseStatus(latestRecord.disease_status || "ongoing")
+                setClinicalNotes(latestRecord.clinical_notes || "")
+            }
+
+            // Set prescriptions
+            const historyPrescriptions = historyResponse?.history?.prescriptions ?? []
+            if (historyPrescriptions.length > 0) {
+                setPrescriptions(historyPrescriptions.map((p: any) => ({
+                    id: p.id,
+                    medicine: p.medicine_name,
+                    dosage: p.dosage,
+                    frequency: p.frequency,
+                    duration: p.duration,
+                    instructions: p.instructions
+                })))
+            }
+
+            // Set latest vitals
+            const vitalsArr = historyResponse?.history?.vitals ?? []
+            if (vitalsArr.length > 0) {
+                const latestVitals = vitalsArr[0]
+                setVitals(latestVitals)
+                setVitalsSystolic(latestVitals.blood_pressure_systolic?.toString() || "")
+                setVitalsDiastolic(latestVitals.blood_pressure_diastolic?.toString() || "")
+                setTemperature(latestVitals.temperature?.toString() || "")
+                setHeartRate(latestVitals.heart_rate?.toString() || "")
+                setO2Saturation(latestVitals.oxygen_saturation?.toString() || "")
+            }
+
+            toast({ title: "Success", description: `Loaded patient: ${response?.patient?.name ?? "Unknown"}` })
+        } catch (error: any) {
+            console.error("Error loading patient:", error)
+            toast({ title: "Error", description: error?.message || "Failed to load patient", variant: "destructive" })
+        } finally {
+            setLoading(false)
+        }
   }
 
-  const patientData = selectedPatient && {
-    name: selectedPatient.name,
-    age: selectedPatient.age,
-    gender: selectedPatient.gender,
-    origin:selectedPatient["origin-state"],
-    location: selectedPatient["current-location"] || "NA",
-    lastVisit: selectedPatient.visits.length > 0 ? selectedPatient.visits[selectedPatient.visits.length - 1].visit_date : "No prior visits",
-    abhaId: selectedPatient.health_id,
-    workplace: selectedPatient.workplace || "NA",
-    avatar: selectedPatient.photo_url,
-  }
+    
+    // Create or update medical record
+    const saveMedicalRecord = async () => {
+        if (!patient) {
+            toast({ title: "Error", description: "Please load a patient first", variant: "destructive" })
+            return
+        }
+
+        setLoading(true)
+        try {
+            const recordData = {
+                patient_id: patient.id,
+                doctor_id: DOCTOR_ID,
+                visit_type: "consultation",
+                symptoms,
+                diagnosis,
+                disease_status: diseaseStatus,
+                clinical_notes: clinicalNotes,
+                preferred_language: "hindi"
+            }
+
+            let response: any
+            if (medicalRecord) {
+                // Update existing record
+                response = await api.medicalRecord.update(medicalRecord.id, recordData)
+            } else {
+                // Create new record
+                response = await api.medicalRecord.create(recordData)
+                setMedicalRecord(response?.medical_record ?? null)
+            }
+
+            toast({ title: "Success", description: "Medical record saved successfully" })
+        } catch (error: any) {
+            console.error("Error saving medical record:", error)
+            toast({ title: "Error", description: error?.message || "Failed to save medical record", variant: "destructive" })
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // Save vitals
+    const saveVitals = async () => {
+        if (!patient || !medicalRecord) {
+            toast({ title: "Error", description: "Please load patient and create medical record first", variant: "destructive" })
+            return
+        }
+
+        setLoading(true)
+        try {
+            const vitalsData = {
+                patient_id: patient.id,
+                doctor_id: DOCTOR_ID,
+                medical_record_id: medicalRecord.id,
+                blood_pressure_systolic: vitalsSystolic ? parseInt(vitalsSystolic, 10) : null,
+                blood_pressure_diastolic: vitalsDiastolic ? parseInt(vitalsDiastolic, 10) : null,
+                temperature: temperature ? parseFloat(temperature) : null,
+                heart_rate: heartRate ? parseInt(heartRate, 10) : null,
+                oxygen_saturation: o2Saturation ? parseInt(o2Saturation, 10) : null
+            }
+
+            const response: any = await api.vitals.record(vitalsData)
+            setVitals(response?.vitals ?? null)
+            toast({ title: "Success", description: "Vitals recorded successfully" })
+        } catch (error: any) {
+            console.error("Error saving vitals:", error)
+            toast({ title: "Error", description: error?.message || "Failed to save vitals", variant: "destructive" })
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // Add prescription
+    const addPrescription = () => {
+        setPrescriptions(prev => [...prev, {
+            id: Date.now(),
+            medicine: "",
+            dosage: "",
+            frequency: "",
+            duration: "",
+            instructions: ""
+        }])
+    }
+
+    // Remove prescription
+    const removePrescription = (id: number | string) => {
+        setPrescriptions(prev => prev.filter(p => p.id !== id))
+    }
+
+    // Save all prescriptions
+    const savePrescriptions = async () => {
+        if (!patient || !medicalRecord) {
+            toast({ title: "Error", description: "Please load patient and create medical record first", variant: "destructive" })
+            return
+        }
+
+        setLoading(true)
+        try {
+            const prescriptionData = prescriptions.map(p => ({
+                medicine_name: p.medicine,
+                dosage: p.dosage,
+                frequency: p.frequency,
+                duration: p.duration,
+                instructions: p.instructions
+            })).filter((p: any) => p.medicine_name) // Only save non-empty prescriptions
+
+            if (prescriptionData.length === 0) {
+                setLoading(false)
+                toast({ title: "Warning", description: "No prescriptions to save", variant: "destructive" })
+                return
+            }
+
+            await api.prescription.createBulk(patient.id, DOCTOR_ID, medicalRecord.id, prescriptionData)
+            toast({ title: "Success", description: `Saved ${prescriptionData.length} prescriptions` })
+        } catch (error: any) {
+            console.error("Error saving prescriptions:", error)
+            toast({ title: "Error", description: error?.message || "Failed to save prescriptions", variant: "destructive" })
+        } finally {
+            setLoading(false)
+        }
+    }
 
   
 
-  const addPrescription = () => {
-    const newId = prescriptions.length + 1
-    setPrescriptions([
-      ...prescriptions,
-      {
-        id: newId,
-        medicine: "",
-        dosage: "",
-        frequency: "",
-        duration: "",
-        instructions: "",
-      },
-    ])
-  }
-
-  const removePrescription = (id: number) => {
-    setPrescriptions(prescriptions.filter((p) => p.id !== id))
-  }
-
-  const removeFile = (fileName: string) => {
-    setUploadedFiles(uploadedFiles.filter((f) => f.name !== fileName))
-  }
+  
 
   const generatePatientSummary = () => {
     setIsSaving(true)
@@ -180,36 +358,36 @@ export default function DoctorDashboard() {
     // Simulate API call delay
     setTimeout(() => {
       // Generate mock patient summary
-      const summary =  patientData && `
-PATIENT MEDICAL SUMMARY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      const summary =  patient && `
+        PATIENT MEDICAL SUMMARY
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Patient Information:
-• Name: ${patientData.name}
-• Age: ${patientData.age}
-• Gender: ${patientData.gender}
-• Health ID: ${patientData.abhaId}
-• Location: ${patientData.location}
-• Workplace: ${patientData.workplace}
+        Patient Information:
+        • Name: ${patient.name}
+        • Age: ${patient.age}
+        • Gender: ${patient.gender}
+        • Health ID: ${patient.abhaId}
+        • Location: ${patient.location}
+        • Workplace: ${patient.workplace}
 
-Visit Date: ${new Date().toLocaleDateString()}
-Disease Status: ${diseaseStatus.charAt(0).toUpperCase() + diseaseStatus.slice(1)}
+        Visit Date: ${new Date().toLocaleDateString()}
+        Disease Status: ${diseaseStatus.charAt(0).toUpperCase() + diseaseStatus.slice(1)}
 
-Prescriptions (${prescriptions.length} medications):
-${prescriptions.map((p, i) => `${i + 1}. ${p.medicine}
-   Dosage: ${p.dosage}
-   Frequency: ${p.frequency}
-   Duration: ${p.duration}
-   Instructions: ${p.instructions}`).join('\n\n')}
+        Prescriptions (${prescriptions.length} medications):
+        ${prescriptions.map((p, i) => `${i + 1}. ${p.medicine}
+        Dosage: ${p.dosage}
+        Frequency: ${p.frequency}
+        Duration: ${p.duration}
+        Instructions: ${p.instructions}`).join('\n\n')}
 
-Uploaded Test Results:
-${uploadedFiles.map((f, i) => `${i + 1}. ${f.name}`).join('\n')}
+        Uploaded Test Results:
+        ${uploadedFiles.map((f, i) => `${i + 1}. ${f.name}`).join('\n')}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Generated: ${new Date().toLocaleString()}
-Doctor: Dr. Ramesh Kumar
-Digitally Generated - National Digital Health Mission
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        Generated: ${new Date().toLocaleString()}
+        Doctor: Dr. Ramesh Kumar
+        Digitally Generated - National Digital Health Mission
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       `.trim()
 
       setPatientSummary(summary)
@@ -234,6 +412,7 @@ Digitally Generated - National Digital Health Mission
       // Show success message
       alert('✅ Patient Summary Generated Successfully!\n\nSummary has been saved and will be distributed via SMS and WhatsApp.\n\n✨ Visit History has been updated!')
     }, 1500)
+    saveMedicalRecord();
   }
 
   return (
@@ -292,7 +471,7 @@ Digitally Generated - National Digital Health Mission
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-4">
-              <Input placeholder="Enter Patient ID, Aadhaar, or ABHA ID..." className="flex-1" value={searchHealthId} onChange={(e)=>setSearchHealthId(e.target.value)} />
+              <Input placeholder="Enter Patient ID, Aadhaar, or ABHA ID..." className="flex-1" value={healthId} onChange={(e)=>setHealthId(e.target.value)} />
               <Button className="bg-purple-600 hover:bg-purple-700 text-white px-6">
                 <QrCode className="h-4 w-4 mr-2" />
                 Scan QR Code
@@ -312,20 +491,20 @@ Digitally Generated - National Digital Health Mission
         </Card>
 
         {/* Patient Profile Card */}
-        {patientData && (
+        {patient && (
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <Avatar className="h-16 w-16">
-                    <AvatarImage src={patientData.avatar || "/placeholder.svg"} />
+                    <AvatarImage src={patient.avatar_url || "/placeholder.svg"} />
                     <AvatarFallback>RK</AvatarFallback>
                   </Avatar>
                   <div className="absolute -top-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-white"></div>
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-xl font-semibold text-gray-900">{patientData.name}</h3>
+                    <h3 className="text-xl font-semibold text-gray-900">{patient.name}</h3>
                     <Badge variant="secondary" className="bg-blue-100 text-blue-800">
                       <CheckCircle className="h-3 w-3 mr-1" />
                       Government Verified
@@ -334,33 +513,33 @@ Digitally Generated - National Digital Health Mission
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
                       <span className="text-gray-500">Age</span>
-                      <div className="font-medium">{patientData.age}</div>
+                      <div className="font-medium">{patient.age}</div>
                     </div>
                     <div>
                       <span className="text-gray-500">Gender</span>
-                      <div className="font-medium">{patientData.gender}</div>
+                      <div className="font-medium">{patient.gender}</div>
                     </div>
                     <div>
                       <span className="text-gray-500">Origin State</span>
-                      <div className="font-medium">{patientData.origin}</div>
+                      <div className="font-medium">{patient.origin_state}</div>
                     </div>
                     <div>
                       <span className="text-gray-500">Current Location</span>
-                      <div className="font-medium">{patientData.location}</div>
+                      <div className="font-medium"> {patient.current_address} {patient.current_city} {patient.current_state}</div>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-4 mt-4 text-sm">
                     <div>
                       <span className="text-gray-500">Last Visit</span>
-                      <div className="font-medium text-green-600">{patientData.lastVisit}</div>
+                      <div className="font-medium text-green-600">{patient.medical_records?.[patient.medical_records.length - 1]?.visit_date || "No data"}</div>
                     </div>
                     <div>
                       <span className="text-gray-500">ABHA ID</span>
-                      <div className="font-medium text-blue-600">{patientData.abhaId}</div>
+                      <div className="font-medium text-blue-600">{patient.health_id}</div>
                     </div>
                     <div>
                       <span className="text-gray-500">Workplace</span>
-                      <div className="font-medium text-purple-600">{patientData.workplace}</div>
+                      <div className="font-medium text-purple-600">{patient.workplace}</div>
                     </div>
                   </div>
                 </div>
@@ -387,14 +566,15 @@ Digitally Generated - National Digital Health Mission
                   id="symptoms"
                   placeholder="Persistent cough for 3 weeks, mild fever, chest pain, fatigue"
                   className="min-h-[100px]"
-                  defaultValue="Persistent cough for 3 weeks, mild fever, chest pain, fatigue"
+                  value={symptoms}
+                  onChange={(e) => setSymptoms(e.target.value)}
                 />
               </div>
               <div>
                 <Label htmlFor="diagnosis" className="text-sm font-medium mb-2 block">
                   Diagnosis
                 </Label>
-                <Select>
+                <Select value={diagnosis} onValueChange={setDiagnosis}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select Primary Diagnosis" />
                   </SelectTrigger>
@@ -405,7 +585,7 @@ Digitally Generated - National Digital Health Mission
                     <SelectItem value="bronchitis">Bronchitis</SelectItem>
                   </SelectContent>
                 </Select>
-                <Textarea placeholder="Additional diagnosis notes..." className="mt-3 min-h-[60px]" />
+                <Textarea placeholder="Additional diagnosis notes..." className="mt-3 min-h-[60px]" value={clinicalNotes} onChange={(e) => setClinicalNotes(e.target.value)} />
               </div>
             </div>
 
@@ -459,6 +639,10 @@ Digitally Generated - National Digital Health Mission
                 </label>
               </div>
             </div>
+            {/* <Button onClick={saveMedicalRecord} className="bg-green-600 hover:bg-green-700" disabled={loading}>
+                                            {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                                            Save Medical Record
+            </Button> */}
           </CardContent>
         </Card>
 
@@ -567,6 +751,10 @@ Digitally Generated - National Digital Health Mission
                 </tbody>
               </table>
             </div>
+             {/* <Button onClick={savePrescriptions} className="bg-green-600 hover:bg-green-700 w-full" disabled={loading}>
+             {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+            Save All Prescriptions
+            </Button> */}
           </CardContent>
         </Card>
 
@@ -586,14 +774,14 @@ Digitally Generated - National Digital Health Mission
                   <div>
                     <Label className="text-sm text-gray-600">Blood Pressure</Label>
                     <div className="flex gap-2 mt-1">
-                      <Input placeholder="120" className="w-16" />
+                      <Input placeholder="120" className="w-16" value={vitalsSystolic} onChange={(e) => setVitalsSystolic(e.target.value)} />
                       <span className="self-center text-gray-500">/</span>
-                      <Input placeholder="80" className="w-16" />
+                      <Input placeholder="80" className="w-16" value={vitalsDiastolic} onChange={(e) => setVitalsDiastolic(e.target.value)} />
                     </div>
                   </div>
                   <div>
                     <Label className="text-sm text-gray-600">Temperature (°F)</Label>
-                    <Input placeholder="98.6" className="mt-1" />
+                    <Input placeholder="98.6" className="mt-1" value={temperature} onChange={(e) => setTemperature(e.target.value)} />
                   </div>
                   <div>
                     <Label className="text-sm text-gray-600">Blood Sugar</Label>
@@ -605,13 +793,17 @@ Digitally Generated - National Digital Health Mission
                   </div>
                   <div>
                     <Label className="text-sm text-gray-600">Heart Rate (bpm)</Label>
-                    <Input placeholder="72" className="mt-1" />
+                    <Input placeholder="72" className="mt-1" value={heartRate} onChange={(e) => setHeartRate(e.target.value)} />
                   </div>
                   <div>
                     <Label className="text-sm text-gray-600">Oxygen Saturation</Label>
-                    <Input placeholder="98" className="mt-1" />
+                    <Input placeholder="98" className="mt-1" value={o2Saturation} onChange={(e) => setO2Saturation(e.target.value)} />
                   </div>
                 </div>
+                {/* <Button onClick={saveVitals} className="bg-blue-600 hover:bg-blue-700" disabled={loading}>
+                     {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                        Save Vitals
+                </Button> */}
               </div>
 
               <div>
@@ -706,7 +898,8 @@ Digitally Generated - National Digital Health Mission
                 <Textarea
                   placeholder="Patient shows signs of respiratory infection. Prescribed antibiotics and advised complete rest. Must revisit in 2 weeks or earlier if symptoms worsen. Advised to avoid crowded places and maintain isolation until..."
                   className="min-h-[120px]"
-                  defaultValue="Patient shows signs of respiratory infection. Prescribed antibiotics and advised complete rest. Must revisit in 2 weeks or earlier if symptoms worsen. Advised to avoid crowded places and maintain isolation until"
+                  value={clinicalNotes}
+                  onChange={(e) => setClinicalNotes(e.target.value)}
                 />
               </div>
             </div>
@@ -984,5 +1177,5 @@ Digitally Generated - National Digital Health Mission
         </Card>
       </div>
     </div>
-  )
+    )
 }

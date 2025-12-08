@@ -43,6 +43,7 @@ export default function HealthPortal() {
   const [activeUserType, setActiveUserType] = useState<"worker" | "doctor" | "govt">("worker")
   const [authMethod, setAuthMethod] = useState<"password" | "otp">("password")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [workAuthValue, setWorkAuthValue] = useState("")
   const router = useRouter()
 
   const handleLogin = () => {
@@ -374,7 +375,7 @@ export default function HealthPortal() {
                     <Input 
                       id="workerAuth" 
                       placeholder="Enter mobile number or Aadhaar number" 
-                      className="mt-1 text-sm sm:text-base h-10 sm:h-11 transition-all-smooth focus:border-blue-500"
+                      className="mt-1 text-sm sm:text-base h-10 sm:h-11 transition-all-smooth focus:border-blue-500" value={workAuthValue} onChange={(e) => setWorkAuthValue(e.target.value)  }
                     />
                   </div>
 
@@ -520,7 +521,7 @@ export default function HealthPortal() {
 
               {/* Login Button */}
               <Button 
-                className="w-full bg-green-600 hover:bg-green-700 text-white py-3 text-sm sm:text-base transition-all-smooth hover:scale-[1.02] hover:shadow-lg"
+                className="w-full bg-green-600 hover:bg-green-700 text-white py-3 text-sm sm:text-base transition-all-smooth hover:scale-[1.02] hover:shadow-lg cursor-pointer"
                 onClick={handleLogin}
               >
                 <Shield className="h-4 w-4 mr-2" />

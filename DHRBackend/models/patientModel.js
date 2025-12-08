@@ -67,8 +67,8 @@ export const PatientModel = {
    */
   async getByHealthId(supabase, health_id) {
     const { data, error } = await supabase
-      .from('workers')
-      .select('*, visits(*)')
+      .from('patients')
+      .select('*, medical_records(*)')
       .eq('health_id', health_id)
       .maybeSingle();
     

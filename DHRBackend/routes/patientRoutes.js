@@ -4,7 +4,8 @@ import {
     getPatientByHealthId,
     getPatientHistory,
     updatePatient,
-    getPatientStats
+    getPatientStats,
+    getHealthCard
 } from "../controllers/patientController.js";
 
 const router = express.Router();
@@ -17,10 +18,10 @@ const router = express.Router();
 // Get patient by ID
 router.get("/:patientId", getPatientById);
 
-// POST patient by Health ID
-router.post("/health-id", getPatientByHealthId);
+// get patient by Health ID /api/patient/health-id/:healthId
+router.get("/healthId/:healthId", getPatientByHealthId);
 
-// Get patient medical history
+// Get patient medical history //(`${API_BASE_URL}/patient/${patientId}/history`);
 router.get("/:patientId/history", getPatientHistory);
 
 // Get patient statistics
@@ -28,5 +29,8 @@ router.get("/:patientId/stats", getPatientStats);
 
 // Update patient information
 router.put("/:patientId", updatePatient);
+
+// get health Card by Health ID /api/patient/healthCard
+router.post("/healthCard",getHealthCard);
 
 export default router;

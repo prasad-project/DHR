@@ -49,7 +49,7 @@ export const patientAPI = {
 
     // Get patient by Health ID
     getByHealthId: async (healthId) => {
-        const response = await fetch(`${API_BASE_URL}/patient/health-id/${healthId}`);
+        const response = await fetch(`${API_BASE_URL}/patient/healthId/${healthId}`);
         return handleResponse(response);
     },
 
@@ -67,7 +67,17 @@ export const patientAPI = {
             body: JSON.stringify(data)
         });
         return handleResponse(response);
+    },
+
+    getHealthCard: async (healthId) => {
+        const response = await fetch(`${API_BASE_URL}/patient/healthCard`,{
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ healthId })
+        });
+         return handleResponse(response);
     }
+
 };
 
 // Prescription APIs
