@@ -1,12 +1,14 @@
 "use client"
 
 import React, { useState } from 'react';
-import { Users, MapPin, Activity } from 'lucide-react';
+import { Users, MapPin, Activity, AlertCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { keralaDistricts, DistrictData } from './data/keralaData';
+import { DistrictData } from '@/services/mock/mockDistrictData';
+import { useDistricts } from '@/hooks/useDistricts';
 import InfoTooltip from './InfoTooltip';
 import DistrictModal from './DistrictModal';
-import MapSidebarControls from './MapSidebarControls'; 
+import MapSidebarControls from './MapSidebarControls';
+import { useApi } from '@/context/ApiContext';
 
 // --- Configuration for Icon Colors ---
 const ORIGIN_COLORS: Record<string, string> = {
@@ -24,12 +26,16 @@ interface KeralaMapProps {
     selectedCategory?: string;
 }
 
-export default function KeralaMap({ 
-    showHeat = true, 
-    showIcons = true, 
-    selectedCategory = "All" 
+export default function KeralaMap({
+    showHeat = true,
+    showIcons = true,
+    selectedCategory = "All"
 }: KeralaMapProps) {
-    
+
+    // Data Fetching
+    const { districts, loading, error, refetch } = useDistricts();
+    const { isMockMode } = useApi();
+
     // UI State Management
     const [hoveredDistrict, setHoveredDistrict] = useState<DistrictData | null>(null);
     const [selectedDistrict, setSelectedDistrict] = useState<DistrictData | null>(null);
@@ -53,7 +59,7 @@ export default function KeralaMap({
     // 2. Determines the icon details for the selected category filter
     const getIconDetails = (d: DistrictData) => {
         const categoryKey = mapSelectedCategory === 'All' ? 'Odisha' : (mapSelectedCategory as keyof DistrictData['originBreakdown']);
-        
+
         let count = 0;
         if (mapSelectedCategory === 'All') {
             // Sum all origin workers if 'All' is selected
@@ -67,7 +73,7 @@ export default function KeralaMap({
         const maxWorkers = 30000;
         const baseSize = 5;
         const scaleFactor = Math.min(1, count / maxWorkers);
-        const size = baseSize + scaleFactor * 10; 
+        const size = baseSize + scaleFactor * 10;
 
         return {
             count,
@@ -79,20 +85,49 @@ export default function KeralaMap({
     const handleMouseMove = (e: React.MouseEvent) => {
         // Calculate mouse position relative to the viewport for the Tooltip
         const rect = e.currentTarget.getBoundingClientRect();
-        setMousePos({ 
-            x: e.clientX - rect.left, 
-            y: e.clientY - rect.top 
+        setMousePos({
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
         });
     };
 
     // --- Component Rendering ---
 
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center w-full h-96 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                    <p className="text-slate-500 text-sm">Loading map data...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex items-center justify-center w-full h-96 bg-red-50 rounded-xl border border-red-200">
+                <div className="flex flex-col items-center gap-2 text-red-600">
+                    <AlertCircle className="w-8 h-8" />
+                    <p className="font-medium">Failed to load map data</p>
+                    <p className="text-sm text-red-500">{error}</p>
+                    <button
+                        onClick={() => refetch()}
+                        className="px-4 py-2 bg-white border border-red-200 rounded-md text-sm hover:bg-red-50 transition-colors"
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col lg:flex-row gap-6 w-full h-full bg-slate-50">
-            
+
             {/* 1. Sidebar Controls - Pass State Up/Down */}
             <div className="flex-shrink-0">
-                <MapSidebarControls 
+                <MapSidebarControls
                     showHeat={mapShowHeat}
                     setShowHeat={setMapShowHeat}
                     showIcons={mapShowIcons}
@@ -100,20 +135,28 @@ export default function KeralaMap({
                     selectedCategory={mapSelectedCategory}
                     setSelectedCategory={(category: string) => setMapSelectedCategory(category)}
                 />
+                {isMockMode && (
+                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-xs text-yellow-700 font-medium flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            Mock Mode Active
+                        </p>
+                    </div>
+                )}
             </div>
 
             {/* 2. Interactive Map Container */}
             <div className="flex-1 bg-white rounded-xl shadow-lg border border-slate-200 relative overflow-hidden flex items-center justify-center p-6" onMouseMove={handleMouseMove}>
-                
+
                 {/* SVG Viewport */}
                 <div className="relative w-full max-w-lg h-full" onMouseMove={handleMouseMove}>
                     <svg viewBox="0 0 400 500" className="w-full h-full drop-shadow-xl">
-                        
-                        {keralaDistricts.map((district) => {
+
+                        {districts.map((district) => {
                             const iconDetails = getIconDetails(district);
-                            
+
                             return (
-                                <g 
+                                <g
                                     key={district.id}
                                     onMouseEnter={() => setHoveredDistrict(district)}
                                     onMouseLeave={() => setHoveredDistrict(null)}
@@ -134,8 +177,8 @@ export default function KeralaMap({
                                     {mapShowIcons && iconDetails.count > 0 && (
                                         <g transform={`translate(${district.centroid[0]}, ${district.centroid[1]})`}>
                                             {/* Pulsing ring for visual emphasis */}
-                                            <motion.circle 
-                                                r={iconDetails.size + 4} 
+                                            <motion.circle
+                                                r={iconDetails.size + 4}
                                                 fill={iconDetails.color}
                                                 fillOpacity={0.2}
                                                 className="animate-pulse"
@@ -144,9 +187,9 @@ export default function KeralaMap({
                                                 transition={{ duration: 1.5, repeat: Infinity }}
                                             />
                                             {/* The actual icon dot (size scales by worker count) */}
-                                            <circle 
-                                                r={iconDetails.size} 
-                                                fill={iconDetails.color} 
+                                            <circle
+                                                r={iconDetails.size}
+                                                fill={iconDetails.color}
                                                 className="transition-all duration-300 shadow-sm hover:scale-125"
                                             />
                                             {/* Worker Count Text (optional, for demo) */}
@@ -168,18 +211,18 @@ export default function KeralaMap({
 
                     {/* Hover Tooltip (InfoTooltip.tsx) */}
                     {hoveredDistrict && (
-                        <InfoTooltip 
-                            data={hoveredDistrict} 
-                            x={mousePos.x} 
-                            y={mousePos.y} 
+                        <InfoTooltip
+                            data={hoveredDistrict}
+                            x={mousePos.x}
+                            y={mousePos.y}
                         />
                     )}
                 </div>
 
                 {/* Modal Overlay (DistrictModal.tsx) */}
-                <DistrictModal 
-                    data={selectedDistrict} 
-                    onClose={() => setSelectedDistrict(null)} 
+                <DistrictModal
+                    data={selectedDistrict}
+                    onClose={() => setSelectedDistrict(null)}
                 />
             </div>
         </div>

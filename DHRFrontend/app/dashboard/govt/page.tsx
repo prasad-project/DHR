@@ -1,26 +1,22 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { AlertTriangle, Users, CheckCircle, MoreVertical, MessageCircle, X, TrendingUp, MapPin, Activity, Calendar, ChevronRight } from "lucide-react"
-import { FaUsers, FaExclamationTriangle, FaCampground, FaMap } from "react-icons/fa"
-import { motion, AnimatePresence, useInView, useAnimation, useMotionValue, useTransform } from "framer-motion"
-import { CSSTransition, TransitionGroup } from "react-transition-group"
-import KeralaMap from './components/map/KeralaMap'
+import { GoogleMapsHeatmap } from "@/components/GoogleMapsHeatmap"
+import { GoogleMapsDistrictData } from "@/services/mock/googleMapsMockData"
+import { AnimatePresence, motion } from "framer-motion"
+import { Activity, AlertTriangle, Calendar, CheckCircle, ChevronRight, MapPin, MessageCircle, MoreVertical, TrendingUp, Users, X } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { FaCampground, FaExclamationTriangle, FaMap, FaUsers } from "react-icons/fa"
 import "../../../styles/animations.css"
 
 export default function SehatSetuDashboard() {
   const [isBotOpen, setIsBotOpen] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
-  const [activeTooltip, setActiveTooltip] = useState<string | null>(null)
   
   // State for Chart Tooltips
   const [hoveredBar, setHoveredBar] = useState<number | null>(null)
   const [hoveredLineIndex, setHoveredLineIndex] = useState<number | null>(null)
-  const [hoveredMapRegion, setHoveredMapRegion] = useState<string | null>(null)
-  const [hoveredDonutSegment, setHoveredDonutSegment] = useState<string | null>(null)
 
   // Refs for scroll animations
-  const sectionRefs = useRef<(HTMLDivElement | null)[]>([])
   const statsRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<HTMLDivElement>(null)
   const chartsRef = useRef<HTMLDivElement>(null)
@@ -73,9 +69,6 @@ export default function SehatSetuDashboard() {
     },
   ]
 
-  // Animated numbers for metrics with framer-motion
-  const countAnimations = [48247, 14, 1847, 342]
-
   // Framer Motion variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -112,7 +105,7 @@ export default function SehatSetuDashboard() {
       opacity: 1,
       rotateX: 0,
       transition: {
-        type: "spring" as const,
+        type: "spring",
         stiffness: 100,
         damping: 15
       }
@@ -122,7 +115,7 @@ export default function SehatSetuDashboard() {
       y: -10,
       rotateX: 5,
       transition: {
-        type: "spring" as const,
+        type: "spring",
         stiffness: 300,
         damping: 15
       }
@@ -131,33 +124,6 @@ export default function SehatSetuDashboard() {
       scale: 0.98
     }
   }
-
-  // Donut chart animations
-  const donutSegments = [
-    { color: "#2563eb", pct: 42, label: "Construction", dash: 211, offset: 0 },
-    { color: "#f97316", pct: 23, label: "Manufacturing", dash: 115, offset: -211 },
-    { color: "#a855f7", pct: 17, label: "Services", dash: 86, offset: -326 },
-    { color: "#10b981", pct: 18, label: "Hospitality", dash: 91, offset: -412 },
-  ]
-
-  // Donut chart animations will be handled with framer-motion
-
-  // Map regions data with animations
-  const mapRegions = [
-    { points: "250,40 290,60 310,100 290,130 250,140 210,130 190,100 210,60", color: "#10b981", label: "Kasaragod", val: "145K" },
-    { points: "330,100 370,120 390,160 370,190 330,190 310,160", color: "#ef4444", label: "Kannur", val: "267K" },
-    { points: "170,100 210,80 230,120 210,150 170,150 150,120", color: "#10b981", label: "Wayanad", val: "78K" },
-    { points: "250,150 290,140 330,160 310,200 270,210 230,190", color: "#fbbf24", label: "Kozhikode", val: "235K" },
-    { points: "170,160 210,150 240,180 220,220 180,220 150,190", color: "#ef4444", label: "Malappuram", val: "312K" },
-    { points: "330,200 370,190 400,210 390,250 350,260 310,240", color: "#fbbf24", label: "Palakkad", val: "108K" },
-    { points: "250,220 290,210 330,240 310,280 270,290 230,270", color: "#ef4444", label: "Thrissur", val: "388K" },
-    { points: "170,220 210,220 250,240 230,280 190,280 150,260", color: "#10b981", label: "Ernakulam", val: "64K" },
-    { points: "330,260 370,250 400,270 390,310 350,320 310,300", color: "#fbbf24", label: "Idukki", val: "168K" },
-    { points: "250,290 290,280 330,300 310,340 270,350 230,330", color: "#10b981", label: "Kottayam", val: "97K" },
-    { points: "170,280 210,280 250,300 230,340 190,340 150,320", color: "#fbbf24", label: "Alappuzha", val: "188K" },
-    { points: "250,360 290,350 330,370 310,410 270,420 230,400", color: "#ef4444", label: "Pathanamthitta", val: "388K" },
-    { points: "250,430 290,420 330,440 310,480 270,490 230,470", color: "#ef4444", label: "Trivandrum", val: "298K" },
-  ]
 
   // Floating particles for map
   const particles = Array.from({ length: 15 }).map((_, i) => ({
@@ -193,6 +159,23 @@ export default function SehatSetuDashboard() {
                             linear-gradient(to right, #3b82f6, #8b5cf6);
           background-origin: border-box;
           background-clip: padding-box, border-box;
+        }
+        .message-enter {
+          opacity: 0;
+          transform: translateX(-20px);
+        }
+        .message-enter-active {
+          opacity: 1;
+          transform: translateX(0);
+          transition: opacity 300ms, transform 300ms;
+        }
+        .message-exit {
+          opacity: 1;
+        }
+        .message-exit-active {
+          opacity: 0;
+          transform: translateX(20px);
+          transition: opacity 300ms, transform 300ms;
         }
       `}</style>
 
@@ -312,7 +295,6 @@ export default function SehatSetuDashboard() {
                 <motion.div
                   key={index}
                   variants={cardVariants}
-                  custom={index}
                   whileHover="hover"
                   whileTap="tap"
                   className="relative group"
@@ -327,53 +309,31 @@ export default function SehatSetuDashboard() {
                     </div>
 
                     <div className="relative z-10">
-                      <div className="flex justify-between items-start mb-4 sm:mb-5">
-                        <div className={`p-2.5 sm:p-3 bg-gradient-to-br ${card.color} rounded-xl text-white shadow-lg`}>
-                          {card.icon}
+                      <div className="flex justify-between items-start mb-4">
+                        <div className={`p-3 rounded-2xl bg-gradient-to-br ${card.color} bg-opacity-10`}>
+                          <div className={`text-gradient bg-gradient-to-br ${card.color} bg-clip-text text-transparent`}>
+                            {card.icon}
+                          </div>
                         </div>
-                        <motion.span 
-                          className={`text-xs font-bold text-white px-2.5 py-1 rounded-full shadow-md ${card.badgeColor}`}
-                          animate={{ scale: [1, 1.1, 1] }}
-                          transition={{ 
-                            duration: 2, 
-                            repeat: Infinity,
-                            repeatType: "reverse",
-                            delay: index * 0.5
-                          }}
-                        >
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${card.badgeColor} text-white shadow-sm`}>
                           {card.badge}
-                        </motion.span>
+                        </span>
                       </div>
                       
-                      <div className="space-y-1 sm:space-y-2">
-                        <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">
-                          {card.label}
-                        </p>
-                        
-                        {/* Animated counter */}
-                        <motion.h3
-                          className="text-2xl sm:text-3xl font-bold text-slate-900"
-                          initial={{ scale: 0.8, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={{ delay: index * 0.2, type: "spring" }}
-                        >
-                          {countAnimations[index].toLocaleString()}
-                        </motion.h3>
-                        
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs text-slate-400">
-                            {index === 0 ? "Registered across Kerala" : 
-                             index === 1 ? "Unique source regions" : 
-                             index === 2 ? "Medical attention needed" : 
-                             "Processing now"}
-                          </p>
-                          <motion.div 
-                            className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-blue-100 transition-colors"
-                            whileHover={{ rotate: 180 }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            <ChevronRight className="w-3 h-3 text-slate-400 group-hover:text-blue-500" />
-                          </motion.div>
+                      <motion.p 
+                        className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1"
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: card.delay + 0.5 }}
+                      >
+                        {card.value.toLocaleString()}
+                      </motion.p>
+                      <p className="text-sm text-slate-600 mb-2">{card.label}</p>
+                      
+                      <div className="pt-4 border-t border-slate-100">
+                        <div className="flex items-center gap-2 text-xs">
+                          <Activity size={12} className="text-slate-400" />
+                          <span className="text-slate-500">Updated 5 mins ago</span>
                         </div>
                       </div>
                     </div>
@@ -407,7 +367,7 @@ export default function SehatSetuDashboard() {
               </div>
 
               <div className="relative z-10 flex flex-col lg:flex-row gap-6 sm:gap-8">
-                {/* Stats Sidebar with React Spring Trail */}
+                {/* Stats Sidebar */}
                 <div className="w-full lg:w-72 flex-shrink-0">
                   <motion.h3 
                     className="text-lg font-bold text-slate-900 mb-6 pb-4 border-b border-slate-100"
@@ -480,7 +440,14 @@ export default function SehatSetuDashboard() {
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.4, type: "spring" }}
                   >
-                    <KeralaMap />
+                    <div className="h-[600px] w-full">
+                      <GoogleMapsHeatmap
+                        onDistrictSelect={(district: GoogleMapsDistrictData) => {
+                          console.log("Selected district:", district);
+                        }}
+                        className="rounded-lg"
+                      />
+                    </div>
                   </motion.div>
                 </div>
               </div>
@@ -494,7 +461,7 @@ export default function SehatSetuDashboard() {
               viewport={{ once: true, margin: "-100px" }}
               className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6"
             >
-              {/* Bar Chart with React Spring */}
+              {/* Bar Chart */}
               <motion.div
                 variants={cardVariants}
                 initial="hidden"
@@ -559,97 +526,6 @@ export default function SehatSetuDashboard() {
                       </motion.div>
                     ))}
                   </div>
-                </div>
-              </motion.div>
-
-              {/* Donut Chart with React Spring Transitions */}
-              <motion.div
-                variants={cardVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                transition={{ delay: 0.2 }}
-                className="group"
-              >
-                <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_60px_rgb(0,0,0,0.08)] transition-all duration-300 h-full flex flex-col">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="font-bold text-slate-900">Occupation Distribution</h3>
-                    <motion.button
-                      whileHover={{ rotate: 90 }}
-                      whileTap={{ scale: 0.9 }}
-                    >
-                      <MoreVertical size={18} className="text-slate-400 hover:text-slate-600 transition-colors" />
-                    </motion.button>
-                  </div>
-                  
-                  <div className="flex-1 flex items-center justify-center relative">
-                    <svg viewBox="0 0 200 200" className="w-48 h-48 transform -rotate-90">
-                      {/* Background */}
-                      <circle cx="100" cy="100" r="80" fill="none" stroke="#f1f5f9" strokeWidth="25" />
-                      
-                      {/* Animated Segments */}
-                      {donutSegments.map((item, index) => (
-                        <motion.circle
-                          key={index}
-                          cx="100"
-                          cy="100"
-                          r="80"
-                          fill="none"
-                          stroke={item.color}
-                          strokeWidth="25"
-                          strokeDasharray={`${item.dash} 503`}
-                          strokeDashoffset={item.offset}
-                          className="cursor-pointer transition-all hover:stroke-[28px] hover:opacity-90"
-                          onMouseEnter={() => setHoveredDonutSegment(item.label)}
-                          onMouseLeave={() => setHoveredDonutSegment(null)}
-                          initial={{ pathLength: 0, opacity: 0 }}
-                          animate={{ pathLength: 1, opacity: 1 }}
-                          transition={{ delay: index * 0.2, duration: 1.5 }}
-                        />
-                      ))}
-                    </svg>
-                    
-                    {/* Center Text with Animation */}
-                    <motion.div 
-                      className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
-                      animate={{ scale: hoveredDonutSegment ? 1.1 : 1 }}
-                      transition={{ type: "spring", stiffness: 200 }}
-                    >
-                      <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                        Sector
-                      </span>
-                      <span className="text-lg font-bold text-slate-800">
-                        {hoveredDonutSegment || "All"}
-                      </span>
-                    </motion.div>
-                  </div>
-                  
-                  {/* Legend */}
-                  <motion.div 
-                    className="flex flex-wrap gap-3 justify-center mt-6 pt-6 border-t border-slate-100"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1 }}
-                  >
-                    {donutSegments.map((seg, index) => (
-                      <motion.div
-                        key={index}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onMouseEnter={() => setHoveredDonutSegment(seg.label)}
-                        onMouseLeave={() => setHoveredDonutSegment(null)}
-                      >
-                        <div 
-                          className="w-3 h-3 rounded-full shadow-sm"
-                          style={{ backgroundColor: seg.color }}
-                        />
-                        <span className="text-xs font-medium text-slate-700">
-                          {seg.label} ({seg.pct}%)
-                        </span>
-                      </motion.div>
-                    ))}
-                  </motion.div>
                 </div>
               </motion.div>
 
@@ -796,6 +672,59 @@ export default function SehatSetuDashboard() {
                   </motion.div>
                 </div>
               </motion.div>
+
+              {/* Donut Chart Card */}
+              <motion.div
+                variants={cardVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                transition={{ delay: 0.8 }}
+                className="group"
+              >
+                <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_60px_rgb(0,0,0,0.08)] transition-all duration-300 h-full">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="font-bold text-slate-900">Occupation Distribution</h3>
+                    <motion.button
+                      whileHover={{ rotate: 90 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <MoreVertical size={18} className="text-slate-400 hover:text-slate-600 transition-colors" />
+                    </motion.button>
+                  </div>
+
+                  <div className="flex items-center justify-center mb-8">
+                    <svg viewBox="0 0 200 200" className="w-48 h-48 drop-shadow-lg">
+                      <circle cx="100" cy="100" r="80" fill="none" stroke="#2563eb" strokeWidth="40" strokeDasharray="211 503" transform="rotate(-90 100 100)" />
+                      <circle cx="100" cy="100" r="80" fill="none" stroke="#f97316" strokeWidth="40" strokeDasharray="115 503" strokeDashoffset="-211" transform="rotate(-90 100 100)" />
+                      <circle cx="100" cy="100" r="80" fill="none" stroke="#a855f7" strokeWidth="40" strokeDasharray="86 503" strokeDashoffset="-326" transform="rotate(-90 100 100)" />
+                      <circle cx="100" cy="100" r="80" fill="none" stroke="#10b981" strokeWidth="40" strokeDasharray="91 503" strokeDashoffset="-412" transform="rotate(-90 100 100)" />
+                      <circle cx="100" cy="100" r="50" fill="white" />
+                    </svg>
+                  </div>
+
+                  <div className="space-y-4">
+                    {[
+                      { label: "Construction", val: "42%", color: "bg-blue-600" },
+                      { label: "Manufacturing", val: "23%", color: "bg-orange-500" },
+                      { label: "Services", val: "17%", color: "bg-purple-500" },
+                      { label: "Hospitality", val: "18%", color: "bg-green-500" }
+                    ].map((item, index) => (
+                      <motion.div
+                        key={item.label}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 + 0.5 }}
+                        className="flex items-center gap-3 hover:bg-slate-50 p-2 rounded-lg transition-colors"
+                      >
+                        <div className={`w-3 h-3 ${item.color} rounded-full`}></div>
+                        <span className="text-sm text-slate-600 font-medium">{item.label}</span>
+                        <span className="text-sm font-bold text-slate-900 ml-auto">{item.val}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
             </motion.div>
           </main>
 
@@ -871,41 +800,33 @@ export default function SehatSetuDashboard() {
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <TransitionGroup>
-                    <CSSTransition
-                      key="bot-message"
-                      timeout={300}
-                      classNames="message"
-                    >
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="flex gap-3"
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex gap-3"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center text-indigo-600 text-xs flex-shrink-0 shadow-sm">
+                      AI
+                    </div>
+                    <div className="bg-white p-3 rounded-2xl rounded-tl-none border border-slate-200 shadow-sm text-sm text-slate-600 max-w-[80%]">
+                      <p>Hello! I can help analyze worker data, flag health risks, or generate reports. What do you need?</p>
+                      <motion.div 
+                        className="mt-2 flex gap-2"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.5 }}
                       >
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center text-indigo-600 text-xs flex-shrink-0 shadow-sm">
-                          AI
-                        </div>
-                        <div className="bg-white p-3 rounded-2xl rounded-tl-none border border-slate-200 shadow-sm text-sm text-slate-600 max-w-[80%]">
-                          <p>Hello! I can help analyze worker data, flag health risks, or generate reports. What do you need?</p>
-                          <motion.div 
-                            className="mt-2 flex gap-2"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.5 }}
+                        {['Health Trends', 'Risk Analysis', 'Generate Report'].map((tag, i) => (
+                          <span
+                            key={i}
+                            className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-full border border-blue-100"
                           >
-                            {['Health Trends', 'Risk Analysis', 'Generate Report'].map((tag, i) => (
-                              <span
-                                key={i}
-                                className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-full border border-blue-100"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </motion.div>
-                        </div>
+                            {tag}
+                          </span>
+                        ))}
                       </motion.div>
-                    </CSSTransition>
-                  </TransitionGroup>
+                    </div>
+                  </motion.div>
                 </motion.div>
 
                 {/* Quick Actions */}
