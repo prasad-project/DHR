@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { AlertTriangle, Users, CheckCircle, MoreVertical, MessageCircle, X, TrendingUp, MapPin, Activity, Calendar, ChevronRight } from "lucide-react"
-import { FaUsers, FaExclamationTriangle, FaCampground, FaMap } from "react-icons/fa"
-import { motion, AnimatePresence } from "framer-motion"
-import KeralaMap from './components/map/KeralaMap'
+import { GoogleMapsHeatmap } from "@/components/GoogleMapsHeatmap"
+import { GoogleMapsDistrictData } from "@/services/mock/googleMapsMockData"
+import { AnimatePresence, motion } from "framer-motion"
+import { Activity, AlertTriangle, Calendar, CheckCircle, ChevronRight, MapPin, MessageCircle, MoreVertical, TrendingUp, Users, X } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { FaCampground, FaExclamationTriangle, FaMap, FaUsers } from "react-icons/fa"
 import "../../../styles/animations.css"
 
 export default function SehatSetuDashboard() {
@@ -439,7 +440,14 @@ export default function SehatSetuDashboard() {
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.4, type: "spring" }}
                   >
-                    <KeralaMap />
+                    <div className="h-[600px] w-full">
+                      <GoogleMapsHeatmap
+                        onDistrictSelect={(district: GoogleMapsDistrictData) => {
+                          console.log("Selected district:", district);
+                        }}
+                        className="rounded-lg"
+                      />
+                    </div>
                   </motion.div>
                 </div>
               </div>
