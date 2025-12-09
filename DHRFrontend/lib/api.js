@@ -302,7 +302,16 @@ export const authenication={
             body: JSON.stringify({phone,otp})
         });
         return handleResponse(response);
-    }
+    },
+
+    doctorLogin: async(doctorId, password) => {
+        const response = await fetch(`${API_BASE_URL}/auth/doctorLogin`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ doctor_id: doctorId, password })
+        });
+        return handleResponse(response);
+    },
 }
 
 // Export all APIs

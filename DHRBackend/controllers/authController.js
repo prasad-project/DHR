@@ -30,15 +30,45 @@ export const registerUser = async (req, res) => {
         });
     }
 };
-
-export const loginUser = async (req, res) => {
+export const doctorLoginUser = async (req, res) => {
     try {
-        const { email, password } = req.body;
-        const doctor = await authModel.login(supabase, { email, password });
-        res.json({
+        const { doctor_id, password } = req.body;
+
+        const doctor = await authModel.doctorLogin(supabase, { doctor_id, password });
+
+        // doctorLogin should return null/undefined if credentials are wrong
+        if (!doctor) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid doctor ID or password"
+            });
+        }
+
+        // If login is valid
+        return res.json({
             success: true,
             message: "Login successful",
             doctor: doctor
+        });
+
+    } catch (error) {
+        console.error("Login error:", error);
+        res.status(500).json({
+            error: "Internal server error",
+            details: error.message
+        });
+    }
+};
+
+
+export const govLoginUser = async (req, res) => {
+    try {
+        const { email, password_hash } = req.body;
+        const govrnment = await authModel.governmentLogin(supabase, { email, password_hash });
+        res.json({
+            success: true,
+            message: "Login successful",
+            gov: govrnment
         });
     } catch (error) {
         console.error("Login error:", error);
@@ -88,58 +118,6 @@ export const otpSend = async (req, res) => {
   }
 }
 
-// //otp verify
-// export const otpVerify = async (req, res) => {
-//     try {
-//         const {phone, otp} = req.body;
-//         const record = otpStore[phone];
-//         if(!record){
-//             return res.status(400).json({error:"No OTP sent to this phone number"});
-//         }
-          
-
-//         if (Date.now() > record.expiresAt){
-//             delete otpStore[phone];
-//             console.log(otpStore)
-//             return res.status(400).json({ error: "OTP expired" });
-//         }
-
-//         if (parseInt(otp.trim()) !== record.otp){
-//             console.log(record.otp, otp);
-//             return res.status(400).json({ error: "Incorrect OTP" });
-//         }
-//          // Fetch user info from DB
-//         // const user = await authModel.getUserByPhone(supabase, phone);
-//         // if (!user) {
-//         //     return res.status(404).json({ error: "User not found in database" });
-//         // }
-
-
-//         // Payload for JWT token
-//         const payload = {
-//             id: user.id,
-//             phone: user.phone,
-//             role: "worker",
-//         };
-
-//         // Generate real JWT
-//         const token = generateToken(payload);
-
-//         return res.json({
-//             success: true,
-//             message: "OTP verified successfully",
-//             token,
-//             user: payload
-//         });
-//         } catch (error) {
-//         console.error("OTP Verify error:", error);
-//         res.status(500).json({
-//             error: "Internal server error",
-//             details: error.message
-//         });
-//     }
-// }
-
 
 //otp verify
 export const otpVerify = async (req, res) => {
@@ -166,10 +144,31 @@ export const otpVerify = async (req, res) => {
       return res.status(400).json({ error: "Incorrect OTP" });
     }
 
+     //Fetch user info from DB
+        const user = await authModel.getUserByPhone(supabase, phone);
+        if (!user) {
+            return res.status(404).json({ error: "User not found in database" });
+        }
+
     // success: clear store and respond
     delete otpStore[phone];
     // TODO: create session/JWT as needed
-    return res.json({ success: true, message: "Phone verified" });
+         // Payload for JWT token
+        const payload = {
+            id: user.id,
+            phone: user.phone,
+            role: "worker",
+        };
+
+        // Generate real JWT
+        const token = generateToken(payload);
+
+        return res.json({
+            success: true,
+            message: "OTP verified successfully",
+            token,
+            user: payload
+        });
   } catch (err) {
     console.error("verify-otp error:", err);
     return res.status(500).json({ error: "Internal server error" });
